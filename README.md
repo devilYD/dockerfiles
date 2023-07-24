@@ -1,5 +1,10 @@
 # dockerfiles
+
 从Docker官方提供的基础镜像构建自己的镜像，如编程环境，或运行服务等。
+
+## 使用
+
+安装docker并配置国内镜像源，下载本库，进入所需文件夹执行docker build指令。
 
 ## git
 
