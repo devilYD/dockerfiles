@@ -1,0 +1,41 @@
+# ubuntu下安装了git并且配置好ssh服务的镜像
+# 使用前需要将自己提前生成的密钥文件放置于此目录下，并修改git-config.sh中的
+# 用户名和email变量为自己密钥生成的用户名和email
+# 在此目录下运行如下命令进行镜像构建
+# docker build -t git-unbuntu:1.0 .
+# 然后运行如下指令即可启动容器
+# docker container run --name git-ubuntu -p 10000:22 -v [你需要使用git管理的目录]:/git/repo -it git-ubuntu:1.0
+
+# 基础镜像
+FROM ubuntu:latest
+
+#加载git初始化脚本和提前生成的密钥
+ADD git-config.sh /tempfile/
+ADD id_rsa /tempfile/
+ADD id_rsa.pub /tempfile/
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN \
+apt update \
+&& apt install -y git \
+&& apt install -y openssh-server \
+# 初始化git
+&& mkdir ~/.ssh \
+&& sh /tempfile/git-config.sh \
+&& mv /tempfile/id_rsa ~/.ssh \
+&& mv /tempfile/id_rsa.pub ~/.ssh \
+&& cd ~/.ssh \
+&& chmod 600 id_rsa \
+&& chmod 644 id_rsa.pub \
+&& sed -i "s/#PermitRootLogin.*/PermitRootLogin yes/g" /etc/ssh/sshd_config \
+&& echo "y"|ssh-keygen -t dsa -f /etc/ssh/ssh_host_dsa_key \
+&& echo "y"|ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key \
+&& echo "root:12345"|chpasswd \
+&& /etc/init.d/ssh restart
+
+EXPOSE 22
+
+CMD ["/usr/sbin/sshd", "-D"]
+
+WORKDIR /git/repo
