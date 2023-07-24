@@ -18,6 +18,8 @@
 
 使用ubuntu作为基础镜像构建的镜像，体积较大，但是能够使用code server在vs code上方便的进行开发，另一方面也配置好了ssh服务，能够使用ssh远程连接终端进行开发管理
 
+[点击此处跳转说明文档](/git-ubuntu/README_git_ubuntu.md)
+
 ## Java
 
 单独的Java环境，配置有jdk1.8以及maven，可将maven的本地仓库挂载到本机目录下或者挂载到卷进行管理
@@ -29,3 +31,5 @@
 ### orcale jdk1.8
 
 使用ubuntu 20.04版本，配置了orcale jdk1.8以及maven，配置了maven使用阿里镜像仓库，以及ssh远程连接服务，由于orcale jdk的下载需要进行账户登陆验证，所以建议手动下载安装包
+
+[点击此处跳转说明文档](/orcale-jdk8/README_orcale_jdk8.md)
