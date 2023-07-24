@@ -9,14 +9,16 @@
 # 基础镜像
 FROM ubuntu:latest
 
-#加载git初始化脚本和提前生成的密钥
+# 加载git初始化脚本和提前生成的密钥
 ADD git-config.sh /tempfile/
 ADD id_rsa /tempfile/
 ADD id_rsa.pub /tempfile/
 
+# 配置环境变量使apt安装软件不需要额外确认
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN \
+# 安装git和ssh服务端
 apt update \
 && apt install -y git \
 && apt install -y openssh-server \
@@ -28,10 +30,12 @@ apt update \
 && cd ~/.ssh \
 && chmod 600 id_rsa \
 && chmod 644 id_rsa.pub \
+# 初始化ssh服务端
 && sed -i "s/#PermitRootLogin.*/PermitRootLogin yes/g" /etc/ssh/sshd_config \
 && echo "y"|ssh-keygen -t dsa -f /etc/ssh/ssh_host_dsa_key \
 && echo "y"|ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key \
 && echo "root:12345"|chpasswd \
+#重启ssh服务使配置生效
 && /etc/init.d/ssh restart
 
 EXPOSE 22
