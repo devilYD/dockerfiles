@@ -1,0 +1,66 @@
+# 构建一个Ubuntu20.04下具备orcale JDK8、Maven3的开发环境，配置阿里云镜像
+# 由于使用orcale的jdk8，而下载orcalejdk需要登陆，所以使用时需要手动下载到本地
+# 
+# 在本目录下使用如下指令构建镜像
+# docker build -t "orcale-jdk8:1.0" .
+# 使用docker images查询镜像列表
+# 
+# 镜像启动指令如下
+# docker container run -name orcale_jdk8 -p [随便一个未被使用的端口号]:8080 -v [项目目录]:/data -v [maven本地库目录]:/maven-repository -it orcale-jdk8:1.0 bash
+
+# 定义变量
+# jdk压缩包文件名带后缀
+ARG JDK_NAME=
+# jdk版本号，如压缩包是jdk-8u381，版本号就是1.8.0_381
+ARG JDK_TAG=
+# 
+
+# 基础镜像
+FROM ubuntu:20.04
+
+# 添加jdk8压缩包至 /usr/local 目录，压缩包会自动解压，解压后目录名称为jdk1.8.0_231
+ADD ${JDK_NAME} /usr/local/env/jdk8/
+# 将自定义maven配置文件移入镜像
+ADD settings.xml /tempfile/
+# 配置JAVA_HOME环境变量
+ENV JAVA_HOME /usr/local/env/jdk8/jdk${JDK_TAG}/
+# 将JAVA_HOME/bin 添加至PATH环境变量
+ENV PATH $JAVA_HOME/bin:$PATH
+
+RUN \
+apt update \ 
+# 安装maven
+&& DEBIAN_FRONTEND=noninteractive apt install -y maven \
+
+# 创建本地maven库和项目目录
+&& mkdir /data \
+&& mkdir /maven-repository \
+# 备份maven原始配置文件
+&& mv /etc/maven/settings.xml /etc/maven/settings-primitive.xml \
+&& mv /tempfile/settings.xml /etc/maven \
+# 初始化maven脚本并输出设置信息
+&& mvn help:effective-settings \
+# 删除临时文件夹
+&& rm -rf /tempfile \
+# 安装ssh服务端
+&& DEBIAN_FRONTEND=noninteractive apt install -y openssh-server \
+# 配置ssh
+&& sed -i "s/#PermitRootLogin.*/PermitRootLogin yes/g" /etc/ssh/sshd_config \
+&& echo "y"|ssh-keygen -t dsa -f /etc/ssh/ssh_host_dsa_key \
+&& echo "y"|ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key \
+&& echo "root:12345"|chpasswd \
+# 重启ssh服务（初始化）
+&& /etc/init.d/ssh restart
+
+# 暴露端口
+EXPOSE 8080
+EXPOSE 22
+EXPOSE 8009
+EXPOSE 8005
+EXPOSE 8443
+
+# 设置工作目录
+WORKDIR /data
+
+# 开机运行ssh服务
+CMD ["/usr/sbin/sshd", "-D"]
